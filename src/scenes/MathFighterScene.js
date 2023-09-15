@@ -24,6 +24,9 @@ export default class MathFighterScene extends Phaser.Scene {
     this.button0 = undefined;
     this.buttonDel = undefined;
     this.buttonOk = undefined;
+    this.numberArray = [];
+    this.number = 0;
+    this.question = [];
   }
 
   preload() {
@@ -67,7 +70,8 @@ export default class MathFighterScene extends Phaser.Scene {
       .setBounce(0.2)
       .setOffset(20, -10)
       .setFlipX(true);
-    this.physics.add.collider(this.player, tile, this.enemy);
+    this.physics.add.collider(this.player, tile);
+    this.physics.add.collider(this.enemy, tile);
     this.slash = this.physics.add
       .sprite(240, 60, "slash")
       .setActive(false)
@@ -148,6 +152,8 @@ export default class MathFighterScene extends Phaser.Scene {
       fill: "#000",
     });
     this.createButtons();
+    this.input.on("gameobjectdown", this.addNumber, this);
+    this.generateQuestion();
   }
   createButtons() {
     const startPosY = this.scale.height - 246;
@@ -212,7 +218,6 @@ export default class MathFighterScene extends Phaser.Scene {
       .image(this.button2.x + widthDiff, startPosY, "numbers", 2)
       .setInteractive()
       .setData("value", 3);
-
     this.button6 = this.add
       .image(
         this.button5.x + widthDiff,
@@ -222,7 +227,6 @@ export default class MathFighterScene extends Phaser.Scene {
       )
       .setInteractive()
       .setData("value", 6);
-
     this.button9 = this.add
       .image(
         this.button8.x + widthDiff,
@@ -232,7 +236,6 @@ export default class MathFighterScene extends Phaser.Scene {
       )
       .setInteractive()
       .setData("value", 9);
-
     this.buttonOk = this.add
       .image(
         this.button0.x + widthDiff,
@@ -242,5 +245,73 @@ export default class MathFighterScene extends Phaser.Scene {
       )
       .setInteractive()
       .setData("value", "ok");
+  }
+  addNumber(pointer, object, event) {
+    let value = object.getData("value");
+
+    if (isNaN(value)) {
+      if (value == "del") {
+        this.numberArray.pop();
+        if (this.numberArray.length < 1) {
+          this.numberArray[0] = 0;
+        }
+      }
+      if (value == "ok") {
+        this.checkAnswer();
+        this.numberArray = [];
+        this.numberArray[0] = 0;
+      }
+    } else {
+      if (this.numberArray.length == 1 && this.numberArray[0] == 0) {
+        this.numberArray[0] = value;
+      } else {
+        if (this.numberArray.length < 10) {
+          this.numberArray.push(value);
+        }
+      }
+    }
+    this.number = parseInt(this.numberArray.join(""));
+
+    this.resultText.setText(this.number);
+    const textHalfWidth = this.resultText.width * 0.5;
+    this.resultText.setX(this.gameHalfWidth - textHalfWidth);
+    event.stopPropagation();
+  }
+  getOperator() {
+    const operator = ["+", "-", "x", ":"];
+    return operator[Phaser.Math.Between(0, 3)];
+  }
+  generateQuestion() {
+    let numberA = Phaser.Math.Between(0, 50);
+    let numberB = Phaser.Math.Between(0, 50);
+    let operator = this.getOperator();
+    if (operator === "+") {
+      this.question[0] = `${numberA} + ${numberB}`;
+      this.question[1] = numberA + numberB;
+    }
+    if (operator === "x") {
+      this.question[0] = `${numberA} x ${numberB}`;
+      this.question[1] = numberA * numberB;
+    }
+    if (operator === "-") {
+      if (numberB > numberA) {
+        this.question[0] = `${numberB} - ${numberA}`;
+        this.question[1] = numberB - numberA;
+      } else {
+        this.question[0] = `${numberA} - ${numberB}`;
+        this.question[1] = numberA - numberB;
+      }
+    }
+    if (operator === ":") {
+      do {
+        numberA = Phaser.Math.Between(0, 50);
+        numberB = Phaser.Math.Between(0, 50);
+      } while (!Number.isInteger(numberA / numberB));
+      this.question[0] = `${numberA} : ${numberB}`;
+      this.question[1] = numberA / numberB;
+    }
+    this.questionText.setText(this.question[0]);
+    const textHalfWidth = this.questionText.width * 0.5;
+    this.questionText.setX(this.gameHalfWidth - textHalfWidth);
   }
 }
